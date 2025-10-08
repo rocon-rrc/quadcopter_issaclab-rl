@@ -73,6 +73,10 @@ class QuadcopterIsaacOg(DirectRLEnv):
             self._base_masses = self._robot.root_physx_view.get_masses().clone().to(self.device)
             # Create a buffer to hold the CURRENT randomized masses for all environments
             self._randomized_masses = self._base_masses.clone()
+            # Store base inertia tensors for randomization
+            self._base_inertias = self._robot.root_physx_view.get_inertias().clone().to(self.device)
+            # Buffer for randomized inertias
+            self._randomized_inertias = self._base_inertias.clone()
             
             # Buffers for mimicked DR
             # For thrust + 3 moments
@@ -226,9 +230,11 @@ class QuadcopterIsaacOg(DirectRLEnv):
         # 1. Randomize mass in the simulator
         self._randomize_mass(env_ids)
 
-        # 2. (MIMICKED DR) Generate new parameters for controller mimics
-        mimicked_params = self._generate_mimicked_parameters(len(env_ids))
+        # 2. Randomize inertia in the simulator
+        self._randomize_inertia(env_ids)
 
+        # 3. (MIMICKED DR) Generate new parameters for controller mimics
+        mimicked_params = self._generate_mimicked_parameters(len(env_ids))
         if 'actuator_scales' in mimicked_params:
             self._actuator_efficiency_scales[env_ids] = mimicked_params['actuator_scales']
 
@@ -268,6 +274,26 @@ class QuadcopterIsaacOg(DirectRLEnv):
             mimicked_params['actuator_scales'] = scales
 
         return mimicked_params
+
+    def _randomize_inertia(self, env_ids: torch.Tensor):
+        """Randomizes the inertia tensor of the drone's bodies for specified environments."""
+        if not hasattr(self.cfg, "inertia_scale_range") or len(env_ids) == 0:
+            return
+
+        inertia_range = self.cfg.inertia_scale_range
+        num_bodies = self._base_inertias.shape[1]
+        # Inertia tensor shape: (num_envs, num_bodies, 3, 3)
+        scales = (inertia_range[1] - inertia_range[0]) * torch.rand(
+            (len(env_ids), num_bodies, 3), device=self.device
+        ) + inertia_range[0]
+        # Only scale the diagonal (Ixx, Iyy, Izz)
+        new_inertias_subset = self._base_inertias[env_ids].clone()
+        for i in range(3):
+            new_inertias_subset[:, :, i, i] *= scales[:, :, i]
+        self._randomized_inertias[env_ids] = new_inertias_subset
+
+        all_envs_idx = torch.arange(self.num_envs, device=self.device)
+        self._robot.root_physx_view.set_inertias(self._randomized_inertias.cpu(), indices=all_envs_idx.cpu())
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # create markers if necessary for the first tome
