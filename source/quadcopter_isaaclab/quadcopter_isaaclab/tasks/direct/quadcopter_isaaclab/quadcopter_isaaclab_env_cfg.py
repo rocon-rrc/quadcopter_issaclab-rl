@@ -21,8 +21,8 @@ import math
 @configclass
 class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 4
-    episode_length_s = 150.0
+    decimation = 2
+    episode_length_s = 100.0
     # - spaces definition
     action_space = 4
     observation_space = 12
@@ -33,7 +33,8 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     robot_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="/World/envs/env_.*/Robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/Tarot 650 Assembly_urdf_wts.SLDASM/Tarot 650 Assembly_urdf_wts.SLDASM.usd",
+            usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/F450.SLDASM/F450.SLDASM.usd",
+            #usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/Tarot 650 Assembly_urdf_wts.SLDASM/Tarot 650 Assembly_urdf_wts.SLDASM.usd",
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 max_depenetration_velocity=10.0,
@@ -69,7 +70,7 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
         },
     )
     sim: SimulationCfg = SimulationCfg(
-        dt= 1 / 200.0,
+        dt= 1 / 100.0,
         render_interval=decimation,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="multiply",
@@ -103,7 +104,7 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     # custom parameters/scales
     # - controllable joint
     target_reward_scale = 10.0
-    smooth_reward_scale = -5e-4
+    smooth_reward_scale = -5e-3       #CHANGED FROM A PREV VALUE OF -5e-4
     crash_reward_scale = -10.0
     near_reward_scale = 2.0
     stay_reward_scale = 10.0
@@ -115,26 +116,26 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
 
     termination_pitch = 90
     termination_roll = 90
-    termination_x = 5.0
-    termination_y = 5.0
-    termination_z = 3.0
+    termination_x = 11.0
+    termination_y = 11.0
+    termination_z = 6.0
     termination_ground_close = 0.3
 
-    pos_x_range = [-4.0, 4.0]
-    pos_y_range = [-4.0, 4.0]
-    pos_z_range = [1.0, 3.0]
+    pos_x_range = [-10.0, 10.0]
+    pos_y_range = [-10.0, 10.0]
+    pos_z_range = [1.0, 5.0]
 
     lin_vel_obs_scale = 1/8
     ang_vel_obs_scale = 1/math.pi
     rel_pos_obs_scale = 1/8
 
-    obs_noise = False
+    obs_noise = True
     noise_scale = 0.03
 
-    dr_enabled = False
+    dr_enabled = True
     mass_scale_range = [0.8, 1.2]       # Range for scaling the robot's mass [min, max]
     actuator_scale_range = [0.8, 1.2]      # Range for scaling the actuator efficiency (mimics motor variations) [min, max]
     
-    lin_vel_reward_scale = -0.05
-    ang_vel_reward_scale = -0.05
+    lin_vel_reward_scale = -0.1             #CHANGED FROM A PREV VALUE OF -0.01
+    ang_vel_reward_scale = -0.2             #CHANGED FROM A PREV VALUE OF -0.02
     distance_to_goal_reward_scale = 15.0
