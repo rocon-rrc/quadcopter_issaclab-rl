@@ -1,0 +1,252 @@
+<sdf version='1.11'>
+  <model name='F450.SLDASM'>
+    <link name='base_link'>
+      <inertial>
+        <pose>1.6678e-09 -1.4511999999999999e-07 0.015734999999999999 0 0 0</pose>
+        <mass>2.3538999999999999</mass>
+        <inertia>
+          <ixx>0.00156</ixx>
+          <ixy>2.1786999999999999e-10</ixy>
+          <ixz>-2.8822e-12</ixz>
+          <iyy>0.0016038999999999999</iyy>
+          <iyz>1.2569000000000001e-10</iyz>
+          <izz>0.0027591</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rotor_0_joint' type='revolute'>
+      <pose relative_to='base_link'>0.15909999999999999 -0.15909999999999999 0.071247000000000005 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rotor_0</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rotor_0'>
+      <pose relative_to='rotor_0_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-2.9125999999999999e-06 3.9852000000000004e-06 -0.0053388999999999997 0 0 0</pose>
+        <mass>0.016292999999999998</mass>
+        <inertia>
+          <ixx>3.0178000000000001e-05</ixx>
+          <ixy>2.9916e-05</ixy>
+          <ixz>5.5433999999999998e-11</ixz>
+          <iyy>3.0722000000000002e-05</iyy>
+          <iyz>-1.3711999999999999e-10</iyz>
+          <izz>6.0747e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_0_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_0.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='rotor_0_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_0.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rotor_1_joint' type='revolute'>
+      <pose relative_to='base_link'>-0.15909999999999999 0.15909999999999999 0.071247000000000005 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rotor_1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rotor_1'>
+      <pose relative_to='rotor_1_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>5.2788000000000004e-07 -4.1370000000000001e-07 -0.0053392999999999999 0 0 0</pose>
+        <mass>0.016291</mass>
+        <inertia>
+          <ixx>3.0176e-05</ixx>
+          <ixy>2.9913999999999999e-05</ixy>
+          <ixz>1.9112999999999999e-11</ixz>
+          <iyy>3.0719999999999997e-05</iyy>
+          <iyz>-1.7791999999999999e-11</iyz>
+          <izz>6.0742999999999998e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_1_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_1.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='rotor_1_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_1.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rotor_2_joint' type='revolute'>
+      <pose relative_to='base_link'>0.15909999999999999 0.15909999999999999 0.071247000000000005 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rotor_2</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rotor_2'>
+      <pose relative_to='rotor_2_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>8.3340000000000004e-08 7.2228000000000003e-08 -0.0036606999999999998 0 0 0</pose>
+        <mass>0.016291</mass>
+        <inertia>
+          <ixx>3.0176999999999999e-05</ixx>
+          <ixy>-2.9913999999999999e-05</ixy>
+          <ixz>6.4892999999999998e-12</ixz>
+          <iyy>3.0720999999999999e-05</iyy>
+          <iyz>7.8189999999999997e-12</iyz>
+          <izz>6.0744e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_2.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='rotor_2_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_2.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rotor_3_joint' type='revolute'>
+      <pose relative_to='base_link'>-0.15909999999999999 -0.15909999999999999 0.071247000000000005 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rotor_3</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rotor_3'>
+      <pose relative_to='rotor_3_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-2.9538e-08 -1.9671999999999999e-08 -0.0036606999999999998 0 0 0</pose>
+        <mass>0.016291</mass>
+        <inertia>
+          <ixx>3.0176999999999999e-05</ixx>
+          <ixy>-2.9913999999999999e-05</ixy>
+          <ixz>2.2073000000000001e-13</ixz>
+          <iyy>3.0720999999999999e-05</iyy>
+          <iyz>5.0569999999999999e-14</iyz>
+          <izz>6.0744e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_3_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_3.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='rotor_3_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://F450.SLDASM/meshes/rotor_3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

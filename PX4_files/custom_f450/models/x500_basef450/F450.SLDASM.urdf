@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="F450.SLDASM">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="1.6678E-09 -1.4512E-07 0.015735"
+        rpy="0 0 0" />
+      <mass
+        value="2.3539" />
+      <inertia
+        ixx="0.00156"
+        ixy="2.1787E-10"
+        ixz="-2.8822E-12"
+        iyy="0.0016039"
+        iyz="1.2569E-10"
+        izz="0.0027591" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="rotor_0">
+    <inertial>
+      <origin
+        xyz="-2.9126E-06 3.9852E-06 -0.0053389"
+        rpy="0 0 0" />
+      <mass
+        value="0.016293" />
+      <inertia
+        ixx="3.0178E-05"
+        ixy="2.9916E-05"
+        ixz="5.5434E-11"
+        iyy="3.0722E-05"
+        iyz="-1.3712E-10"
+        izz="6.0747E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_0.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_0.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rotor_0_joint"
+    type="continuous">
+    <origin
+      xyz="0.1591 -0.1591 0.071247"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rotor_0" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="rotor_1">
+    <inertial>
+      <origin
+        xyz="5.2788E-07 -4.137E-07 -0.0053393"
+        rpy="0 0 0" />
+      <mass
+        value="0.016291" />
+      <inertia
+        ixx="3.0176E-05"
+        ixy="2.9914E-05"
+        ixz="1.9113E-11"
+        iyy="3.072E-05"
+        iyz="-1.7792E-11"
+        izz="6.0743E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rotor_1_joint"
+    type="continuous">
+    <origin
+      xyz="-0.1591 0.1591 0.071247"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rotor_1" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="rotor_2">
+    <inertial>
+      <origin
+        xyz="8.334E-08 7.2228E-08 -0.0036607"
+        rpy="0 0 0" />
+      <mass
+        value="0.016291" />
+      <inertia
+        ixx="3.0177E-05"
+        ixy="-2.9914E-05"
+        ixz="6.4893E-12"
+        iyy="3.0721E-05"
+        iyz="7.819E-12"
+        izz="6.0744E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rotor_2_joint"
+    type="continuous">
+    <origin
+      xyz="0.1591 0.1591 0.071247"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rotor_2" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="rotor_3">
+    <inertial>
+      <origin
+        xyz="-2.9538E-08 -1.9672E-08 -0.0036607"
+        rpy="0 0 0" />
+      <mass
+        value="0.016291" />
+      <inertia
+        ixx="3.0177E-05"
+        ixy="-2.9914E-05"
+        ixz="2.2073E-13"
+        iyy="3.0721E-05"
+        iyz="5.057E-14"
+        izz="6.0744E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://F450.SLDASM/meshes/rotor_3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rotor_3_joint"
+    type="continuous">
+    <origin
+      xyz="-0.1591 -0.1591 0.071247"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rotor_3" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+</robot>
