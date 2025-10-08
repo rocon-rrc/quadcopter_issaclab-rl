@@ -134,6 +134,7 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
 
     dr_enabled = True
     mass_scale_range = [0.8, 1.2]       # Range for scaling the robot's mass [min, max]
+    inertia_scale_range = [0.8, 1.2]
     actuator_scale_range = [0.8, 1.2]      # Range for scaling the actuator efficiency (mimics motor variations) [min, max]
     
     lin_vel_reward_scale = -0.1             #CHANGED FROM A PREV VALUE OF -0.01
