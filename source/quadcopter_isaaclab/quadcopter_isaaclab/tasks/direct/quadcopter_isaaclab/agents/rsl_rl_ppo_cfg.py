@@ -16,10 +16,10 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     experiment_name = "cartpole_direct"
     empirical_normalization = True
     policy = RslRlPpoActorCriticCfg(
-        init_noise_std=0.3,
-        actor_hidden_dims=[256, 256],
-        critic_hidden_dims=[256, 256],
-        activation="relu",
+        init_noise_std=1.0,
+        actor_hidden_dims=[256, 128],
+        critic_hidden_dims=[256, 128],
+        activation="tanh",
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,

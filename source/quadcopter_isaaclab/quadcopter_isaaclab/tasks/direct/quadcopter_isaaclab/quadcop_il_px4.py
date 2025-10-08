@@ -40,7 +40,7 @@ class QuadcopPX4(DirectRLEnv):
     def __init__(self, cfg: QuadcopterIsaaclabEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
-        self.action_space = gym.spaces.Box(low = -1.0, high =1.0, shape = (4,), dtype = np.float32)
+        #self.action_space = gym.spaces.Box(low = -1.0, high =1.0, shape = (4,), dtype = np.float32)
         
         # Total thrust and moment applied to the base of the quadcopter
         self._actions = torch.zeros(self.num_envs, gym.spaces.flatdim(self.single_action_space), device=self.device)
@@ -58,8 +58,8 @@ class QuadcopPX4(DirectRLEnv):
                 "lin_vel",
                 "ang_vel",
                 "distance_to_goal",
-                #"smooth_rew",
-                #"yaw_rew",
+                "smooth_rew",
+                "yaw_rew",
             ]
         }
         # Get specific body indices
@@ -110,7 +110,7 @@ class QuadcopPX4(DirectRLEnv):
         self.raw_actions = actions.clone().clamp(-1.0, 1.0)
 
         # Calculate thrust and moment from processed actions
-        thrust_val = self._robot_weight * (self.raw_actions[:, 0] + 1.0) / 2.0
+        thrust_val = self.cfg.thrust_to_weight * self._robot_weight * (self.raw_actions[:, 0] + 1.0) / 2.0
         moment_val = self.cfg.moment_scale * self.raw_actions[:, 1:]
 
         if self.cfg.dr_enabled:
@@ -162,8 +162,8 @@ class QuadcopPX4(DirectRLEnv):
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
-            #"smooth_rew": smooth_rew * self.cfg.smooth_reward_scale * self.step_dt,
-            #"yaw_rew": yaw_rew * self.cfg.yaw_reward_scale * self.step_dt,
+            "smooth_rew": smooth_rew * self.cfg.smooth_reward_scale * self.step_dt,
+            "yaw_rew": yaw_rew * self.cfg.yaw_reward_scale * self.step_dt,
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
