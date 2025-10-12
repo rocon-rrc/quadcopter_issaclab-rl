@@ -33,12 +33,15 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     robot_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="/World/envs/env_.*/Robot",
         spawn=sim_utils.UsdFileCfg(
+            #usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/model/model.usd",
             usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/F450.SLDASM/F450.SLDASM.usd",
             #usd_path="/home/amitabh/quadcopter_isaaclab/source/quadcopter_isaaclab/quadcopter_isaaclab/tasks/direct/quadcopter_isaaclab/assets/Tarot 650 Assembly_urdf_wts.SLDASM/Tarot 650 Assembly_urdf_wts.SLDASM.usd",
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 max_depenetration_velocity=10.0,
                 enable_gyroscopic_forces=True,
+                max_linear_velocity=5.0,  # Max linear speed in m/s
+                max_angular_velocity= math.pi/4, # Max angular speed in rad/s (e.g., 2.5 revolutions/sec * 2*pi)
             ),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
@@ -109,7 +112,7 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     near_reward_scale = 2.0
     stay_reward_scale = 10.0
     yaw_lambda = -10.0
-    yaw_reward_scale = 0.01
+    yaw_reward_scale = 0.01          #CHANGED FROM A PREV VALUE OF 0.01
 
     target_lambda = -6.0
     target_threshold = 0.05
@@ -137,6 +140,9 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
     inertia_scale_range = [0.8, 1.2]
     actuator_scale_range = [0.8, 1.2]      # Range for scaling the actuator efficiency (mimics motor variations) [min, max]
     
-    lin_vel_reward_scale = -0.1             #CHANGED FROM A PREV VALUE OF -0.01
-    ang_vel_reward_scale = -0.2             #CHANGED FROM A PREV VALUE OF -0.02
+    lin_vel_reward_scale = -0.01             #CHANGED FROM A PREV VALUE OF -0.01
+    ang_vel_reward_scale = -0.02             #CHANGED FROM A PREV VALUE OF -0.02
     distance_to_goal_reward_scale = 15.0
+
+    # Latency simulation
+    action_latency_range = [1, 4]            #Example: [1, 4] means a random delay of 10, 20, or 30ms will be applied.

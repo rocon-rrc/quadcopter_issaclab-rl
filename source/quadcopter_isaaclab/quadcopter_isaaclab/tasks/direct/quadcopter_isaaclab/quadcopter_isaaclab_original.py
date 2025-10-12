@@ -47,6 +47,22 @@ class QuadcopterIsaacOg(DirectRLEnv):
         # Goal position
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
 
+        # -- RANDOMIZED LATENCY SIMULATION SETUP --
+        self.action_latency_range = self.cfg.action_latency_range
+        # Check if randomization is enabled (max > min)
+        if self.action_latency_range and self.action_latency_range[1] > self.action_latency_range[0]:
+            self.is_latency_enabled = True
+            # The history buffer must be as large as the maximum possible delay
+            max_latency = self.action_latency_range[1]
+            self.action_history_buf = torch.zeros(
+                (self.num_envs, max_latency, self.cfg.action_space),
+                device=self.device
+            )
+            # Buffer to store the sampled latency for each environment
+            self._action_latency_steps = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+        else:
+            self.is_latency_enabled = False
+
         # Logging
         self._episode_sums = {
             key: torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
@@ -55,7 +71,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
                 "ang_vel",
                 "distance_to_goal",
                 "smooth_rew",
-                "yaw_rew",
+                #"yaw_rew",
             ]
         }
         # Get specific body indices
@@ -63,7 +79,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
         self._robot_mass = self._robot.root_physx_view.get_masses()[0].sum()
         self._gravity_magnitude = torch.tensor(self.sim.cfg.gravity, device=self.device).norm()
         self._robot_weight = (self._robot_mass * self._gravity_magnitude).item()
-        print(f"weight : {self._robot_weight}")
+        #print(f"weight : {self._robot_weight}")
 
         self.base_euler = torch.zeros((self.num_envs, 3), device=self.device)
 
@@ -108,10 +124,38 @@ class QuadcopterIsaacOg(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self.last_actions[:] = self.raw_actions[:]
         self.raw_actions = actions.clone().clamp(-1.0, 1.0)
+        self.raw_actions[:, 3] = 0.0  # Ignore yaw action for now
 
-        # Calculate thrust and moment from processed actions
-        thrust_val = self.cfg.thrust_to_weight * self._robot_weight * (self.raw_actions[:, 0] + 1.0) / 2.0
-        moment_val = self.cfg.moment_scale * self.raw_actions[:, 1:]
+        # -- RANDOMIZED LATENCY SIMULATION LOGIC --
+        if self.is_latency_enabled:
+            # The action to apply is chosen based on the per-environment latency value
+            # An action with latency `k` is `k` steps old. In our buffer, which we
+            # shift left, this corresponds to index `max_latency - k`.
+            max_latency = self.action_latency_range[1]
+            # Create the indices for gathering. Shape: (num_envs,)
+            indices = max_latency - 1 - self._action_latency_steps
+            
+            # Reshape indices for torch.gather
+            # Shape becomes (num_envs, 1, 1) and then expanded to (num_envs, 1, num_actions)
+            # This tells gather to pick one full action vector for each environment.
+            indices = indices.view(-1, 1, 1).expand(-1, 1, self.cfg.action_space)
+
+            # Retrieve the delayed action for each environment
+            delayed_action = torch.gather(self.action_history_buf, 1, indices).squeeze(1)
+            
+            # Shift the history buffer to the left
+            self.action_history_buf = torch.roll(self.action_history_buf, shifts=-1, dims=1)
+            # Store the new action in the last slot
+            self.action_history_buf[:, -1, :] = self.raw_actions
+
+            action_to_apply = delayed_action
+        else:
+            action_to_apply = self.raw_actions
+
+        # Calculate thrust and moment from the (potentially delayed) action
+        thrust_val = self.cfg.thrust_to_weight * self._robot_weight * (action_to_apply[:, 0] + 1.0) / 2.0
+        moment_val = self.cfg.moment_scale * action_to_apply[:, 1:]
+
 
         if self.cfg.dr_enabled:
             #(MIMIC KF/KM) Scale final thrust/moment to simulate actuator imperfections
@@ -119,6 +163,9 @@ class QuadcopterIsaacOg(DirectRLEnv):
             moment_val *= self._actuator_efficiency_scales[:, 1:4]
 
         self._thrust[:, 0, 2] = thrust_val
+        #print("thrust_val"+str(thrust_val[0]))
+        #print("moment_val"+str(moment_val[0]))
+        #print("\n")
         self._moment[:, 0, :] = moment_val
 
 
@@ -129,6 +176,14 @@ class QuadcopterIsaacOg(DirectRLEnv):
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
+        #print("quat_w" + str(self._robot.data.root_quat_w[0]))
+        #print("robot_pos_w" + str(self._robot.data.root_pos_w[0]))
+        #print("desired_pos_w" + str(self._desired_pos_w[0]))
+        #print("desired_pos_b" + str(desired_pos_b[0]))
+        #print("projected_gravity_b" + str(self._robot.data.projected_gravity_b[0]))
+        #print("lin_vel_b" + str(self._robot.data.root_lin_vel_b[0]))
+        #print("ang_vel_b" + str(self._robot.data.root_ang_vel_b[0]))
+        #print("\n")
         robot_quat_w = self._robot.data.body_quat_w[:, self._body_id].view(self.num_envs, 4)
         self.base_euler = torch.stack(euler_xyz_from_quat(robot_quat_w), dim=1)
         obs = torch.cat(
@@ -155,7 +210,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
         distance_to_goal_mapped = 1 - torch.tanh(distance_to_goal / 0.8)
         smooth_rew = torch.sum(torch.square(self.raw_actions - self.last_actions), dim=1)
         yaw = self.base_euler[:, 2]
-        #print("yaw in deg" + str(yaw[45]))
+        ##print("yaw in deg" + str(yaw[0]))
         yaw = torch.where(yaw > 180, yaw - 360, yaw) / 180 * 3.14159  # use rad for yaw_reward
         yaw_rew = torch.exp(self.cfg.yaw_lambda * torch.abs(yaw))
         rewards = {
@@ -163,7 +218,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
             "smooth_rew": smooth_rew * self.cfg.smooth_reward_scale * self.step_dt,
-            "yaw_rew": yaw_rew * self.cfg.yaw_reward_scale * self.step_dt,
+            #"yaw_rew": yaw_rew * self.cfg.yaw_reward_scale * self.step_dt,
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
@@ -173,7 +228,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0.1, self._robot.data.root_pos_w[:, 2] > 6.0)
+        died = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0.3, self._robot.data.root_pos_w[:, 2] > 6.0)
         return died, time_out
 
     def _reset_idx(self, env_ids: torch.Tensor | None):
@@ -182,6 +237,16 @@ class QuadcopterIsaacOg(DirectRLEnv):
 
         if self.cfg.dr_enabled:
             self._apply_randomization(env_ids)
+
+        # -- RANDOMIZE LATENCY ON RESET --
+        if self.is_latency_enabled:
+            # Sample a new random latency for each resetting environment
+            min_lat, max_lat = self.action_latency_range
+            self._action_latency_steps[env_ids] = torch.randint(
+                min_lat, max_lat, (len(env_ids),), device=self.device
+            )
+            # Clear the action history for these environments
+            self.action_history_buf[env_ids] = 0.0
 
         # Logging
         final_distance_to_goal = torch.linalg.norm(
@@ -212,7 +277,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
         # Sample new commands
         self._desired_pos_w[env_ids, :2] = torch.zeros_like(self._desired_pos_w[env_ids, :2]).uniform_(-10.0, 10.0)
         self._desired_pos_w[env_ids, :2] += self._terrain.env_origins[env_ids, :2]
-        self._desired_pos_w[env_ids, 2] = torch.zeros_like(self._desired_pos_w[env_ids, 2]).uniform_(0.5, 5.5)
+        self._desired_pos_w[env_ids, 2] = torch.zeros_like(self._desired_pos_w[env_ids, 2]).uniform_(1, 5.5)
         # Reset robot state
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
@@ -282,16 +347,29 @@ class QuadcopterIsaacOg(DirectRLEnv):
 
         inertia_range = self.cfg.inertia_scale_range
         num_bodies = self._base_inertias.shape[1]
-        # Inertia tensor shape: (num_envs, num_bodies, 3, 3)
+        
+        # Generate random scales for the 3 diagonal elements (Ixx, Iyy, Izz)
         scales = (inertia_range[1] - inertia_range[0]) * torch.rand(
             (len(env_ids), num_bodies, 3), device=self.device
         ) + inertia_range[0]
-        # Only scale the diagonal (Ixx, Iyy, Izz)
-        new_inertias_subset = self._base_inertias[env_ids].clone()
-        for i in range(3):
-            new_inertias_subset[:, :, i, i] *= scales[:, :, i]
+        
+        # Get the base inertias for the envs that are resetting
+        base_inertias_subset = self._base_inertias[env_ids]
+        
+        # --- FIX: Create a new zeroed tensor and ONLY populate the diagonal elements ---
+        # This ensures that all off-diagonal products of inertia are zero.
+        new_inertias_subset = torch.zeros_like(base_inertias_subset)
+        
+        # Scale the diagonal components (Ixx, Iyy, Izz) from the base tensor
+        # and place them in the new zeroed tensor at indices 0, 4, and 8.
+        new_inertias_subset[..., 0] = base_inertias_subset[..., 0] * scales[..., 0]
+        new_inertias_subset[..., 4] = base_inertias_subset[..., 4] * scales[..., 1]
+        new_inertias_subset[..., 8] = base_inertias_subset[..., 8] * scales[..., 2]
+        
+        # Update the full inertia buffer
         self._randomized_inertias[env_ids] = new_inertias_subset
 
+        # Set the new inertias using the same full-buffer pattern as for masses
         all_envs_idx = torch.arange(self.num_envs, device=self.device)
         self._robot.root_physx_view.set_inertias(self._randomized_inertias.cpu(), indices=all_envs_idx.cpu())
 
