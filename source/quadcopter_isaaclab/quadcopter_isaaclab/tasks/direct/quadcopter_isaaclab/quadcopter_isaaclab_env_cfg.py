@@ -2,24 +2,64 @@
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-from isaaclab_assets.robots.cartpole import CARTPOLE_CFG
+from __future__ import annotations
+from dataclasses import dataclass
 
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sim import SimulationCfg
+from isaaclab.sim import SimulationCfg, UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
 from isaaclab.utils import configclass
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.terrains import TerrainImporterCfg
 
 
+from isaaclab_assets.robots.cartpole import CARTPOLE_CFG
+
+
 import math
+
+# -- ADDED: Configuration for the PX4-style Rate Controller --
+@dataclass
+class RateControllerCfg:
+    """Configuration for the all-in-one Multicopter Rate Controller."""
+    # Roll axis gains
+    roll_k: float = 1.0
+    roll_p: float = 0.15
+    roll_i: float = 0.20
+    roll_d: float = 0.003
+    roll_ff: float = 0.0
+    roll_int_lim: float = 0.30
+    
+    # Pitch axis gains
+    pitch_k: float = 1.0
+    pitch_p: float = 0.15
+    pitch_i: float = 0.20
+    pitch_d: float = 0.003
+    pitch_ff: float = 0.0
+    pitch_int_lim: float = 0.30
+    
+    # Yaw axis gains
+    yaw_k: float = 1.0
+    yaw_p: float = 0.2
+    yaw_i: float = 0.1
+    yaw_d: float = 0.0
+    yaw_ff: float = 0.0
+    yaw_int_lim: float = 0.30
+    
+    # Yaw torque filter cutoff frequency in Hz
+    yaw_tq_cutoff: float = 5.0
 
 
 @configclass
 class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
+
+    # -- ADDED: Instantiate the rate controller configuration --
+    rate_controller: RateControllerCfg = RateControllerCfg()
+
+    max_body_rates_deg_s: tuple[float, float, float] = (400.0, 400.0, 200.0)
+
     # env
     decimation = 2
     episode_length_s = 100.0
@@ -40,8 +80,8 @@ class QuadcopterIsaaclabEnvCfg(DirectRLEnvCfg):
                 disable_gravity=False,
                 max_depenetration_velocity=10.0,
                 enable_gyroscopic_forces=True,
-                max_linear_velocity=5.0,  # Max linear speed in m/s
-                max_angular_velocity= math.pi/4, # Max angular speed in rad/s (e.g., 2.5 revolutions/sec * 2*pi)
+                max_linear_velocity=10.0,  # Max linear speed in m/s
+                max_angular_velocity= math.pi/2, # Max angular speed in rad/s (e.g., 2.5 revolutions/sec * 2*pi)
             ),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
