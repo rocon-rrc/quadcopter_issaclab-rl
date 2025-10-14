@@ -31,57 +31,6 @@ from isaaclab.markers import CUBOID_MARKER_CFG  # isort: skip
 import math
 from .quadcopter_isaaclab_env_cfg import QuadcopterIsaaclabEnvCfg  # isort: skip
 
-# -- ADDED: PX4-style Rate Controller Class --
-class MulticopterRateController:
-    """
-    An all-in-one, vectorized, PyTorch-based rate controller that mimics the PX4 implementation.
-    Designed for high-performance use within Isaac Lab.
-    """
-    def __init__(self, cfg: RateControllerCfg, num_envs: int, dt: float, device: str):
-        self.cfg = cfg
-        self.num_envs = num_envs
-        self.dt = dt
-        self.device = device
-        self._integral = torch.zeros(self.num_envs, 3, device=self.device)
-        self._lpf_yaw_output = torch.zeros(self.num_envs, device=self.device)
-        self.update_parameters()
-
-    def update_parameters(self):
-        rate_k = torch.tensor([self.cfg.roll_k, self.cfg.pitch_k, self.cfg.yaw_k], device=self.device)
-        self._gains_p = rate_k * torch.tensor([self.cfg.roll_p, self.cfg.pitch_p, self.cfg.yaw_p], device=self.device)
-        self._gains_i = rate_k * torch.tensor([self.cfg.roll_i, self.cfg.pitch_i, self.cfg.yaw_i], device=self.device)
-        self._gains_d = rate_k * torch.tensor([self.cfg.roll_d, self.cfg.pitch_d, self.cfg.yaw_d], device=self.device)
-        self._gains_ff = torch.tensor([self.cfg.roll_ff, self.cfg.pitch_ff, self.cfg.yaw_ff], device=self.device)
-        self._integrator_limit = torch.tensor([self.cfg.roll_int_lim, self.cfg.pitch_int_lim, self.cfg.yaw_int_lim], device=self.device)
-
-    def run(self, rate_setpoints: torch.Tensor, current_rates: torch.Tensor, angular_accel: torch.Tensor) -> torch.Tensor:
-        rate_error = rate_setpoints - current_rates
-        self._integral += rate_error * self.dt
-        self._integral = torch.clip(self._integral, -self._integrator_limit, self._integrator_limit)
-        
-        p_term = self._gains_p * rate_error
-        i_term = self._gains_i * self._integral
-        d_term = self._gains_d * -angular_accel
-        ff_term = self._gains_ff * rate_setpoints
-        
-        torque_setpoint = p_term + i_term + d_term + ff_term
-
-        yaw_torque_in = torque_setpoint[:, 2]
-        if self.cfg.yaw_tq_cutoff > 0.0:
-            rc = 1.0 / (2.0 * torch.pi * self.cfg.yaw_tq_cutoff)
-            alpha = self.dt / (rc + self.dt)
-            self._lpf_yaw_output = alpha * yaw_torque_in + (1.0 - alpha) * self._lpf_yaw_output
-        else:
-            self._lpf_yaw_output = yaw_torque_in
-        
-        torque_setpoint[:, 2] = self._lpf_yaw_output
-        return torque_setpoint
-
-    def reset_idx(self, env_ids: torch.Tensor):
-        if len(env_ids) == 0: return
-        self._integral[env_ids] = 0.0
-        self._lpf_yaw_output[env_ids] = 0.0
-
 
 class QuadcopterIsaacOg(DirectRLEnv):
     cfg: QuadcopterIsaaclabEnvCfg
@@ -97,20 +46,6 @@ class QuadcopterIsaacOg(DirectRLEnv):
         self._moment = torch.zeros(self.num_envs, 1, 3, device=self.device)
         # Goal position
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
-
-        # Convert max body rates from deg/s to rad/s and store as a tensor
-        self.max_body_rates_rad_s = torch.tensor(self.cfg.max_body_rates_deg_s, device=self.device) * (torch.pi / 180.0)
-
-        # --- Rate Controller ---
-        # Note: The controller's internal dt should be the high-frequency physics dt
-        self.rate_controller = MulticopterRateController(
-            cfg=self.cfg.rate_controller,
-            num_envs=self.num_envs,
-            dt=self.sim.cfg.dt,
-            device=self.device
-        )
-        # Buffer to store previous rates for calculating angular acceleration
-        self.previous_body_rates = torch.zeros((self.num_envs, 3), device=self.device)
 
         # -- RANDOMIZED LATENCY SIMULATION SETUP --
         self.action_latency_range = self.cfg.action_latency_range
@@ -189,6 +124,7 @@ class QuadcopterIsaacOg(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self.last_actions[:] = self.raw_actions[:]
         self.raw_actions = actions.clone().clamp(-1.0, 1.0)
+        self.raw_actions[:, 3] = 0.0  # Ignore yaw action for now
 
         # -- RANDOMIZED LATENCY SIMULATION LOGIC --
         if self.is_latency_enabled:
@@ -217,35 +153,20 @@ class QuadcopterIsaacOg(DirectRLEnv):
             action_to_apply = self.raw_actions
 
         # Calculate thrust and moment from the (potentially delayed) action
-        thrust_cmd = self.cfg.thrust_to_weight * self._robot_weight * (action_to_apply[:, 0] + 1.0) / 2.0
-        # Scale body rate commands from [-1, 1] to [-max_rate, +max_rate]
-        rate_setpoints = action_to_apply[:, 1:4] * self.max_body_rates_rad_s
-        # Force zero yaw rate command
-        rate_setpoints[:, 2] = 0.0
+        thrust_val = self.cfg.thrust_to_weight * self._robot_weight * (action_to_apply[:, 0] + 1.0) / 2.0
+        moment_val = self.cfg.moment_scale * action_to_apply[:, 1:]
 
-        # --- 3. GET CURRENT STATE FROM SIMULATION ---
-        current_body_rates = self._robot.data.root_ang_vel_b
-        angular_accel = (current_body_rates - self.previous_body_rates) / self.step_dt
-
-        # --- 4. RUN THE RATE CONTROLLER ---
-        # The controller uses the delayed setpoints and the current drone state.
-        torques = self.rate_controller.run(
-            rate_setpoints,
-            current_body_rates,
-            angular_accel
-        )
 
         if self.cfg.dr_enabled:
             #(MIMIC KF/KM) Scale final thrust/moment to simulate actuator imperfections
-            thrust_cmd *= self._actuator_efficiency_scales[:, 0]
-            torques *= self._actuator_efficiency_scales[:, 1:4]
-        
-        # --- 5. POPULATE FORCE AND TORQUE BUFFERS FOR THE SIMULATOR ---
-        self._thrust[:, 0, 2] = thrust_cmd
-        self._moment[:, 0, :] = torques
+            thrust_val *= self._actuator_efficiency_scales[:, 0]
+            moment_val *= self._actuator_efficiency_scales[:, 1:4]
 
-        # --- 6. STORE CURRENT RATES FOR THE NEXT STEP'S CALCULATION ---
-        self.previous_body_rates[:] = current_body_rates
+        self._thrust[:, 0, 2] = thrust_val
+        #print("thrust_val"+str(thrust_val[0]))
+        #print("moment_val"+str(moment_val[0]))
+        #print("\n")
+        self._moment[:, 0, :] = moment_val
 
 
     def _apply_action(self):
@@ -353,11 +274,6 @@ class QuadcopterIsaacOg(DirectRLEnv):
         self.last_actions[env_ids] = 0.0
         self.raw_actions[env_ids] = 0.0
         self._actions[env_ids] = 0.0
-
-        if len(env_ids) > 0:
-            self.rate_controller.reset_idx(env_ids)
-            self.previous_body_rates[env_ids] = 0.0
-        
         # Sample new commands
         self._desired_pos_w[env_ids, :2] = torch.zeros_like(self._desired_pos_w[env_ids, :2]).uniform_(-10.0, 10.0)
         self._desired_pos_w[env_ids, :2] += self._terrain.env_origins[env_ids, :2]
